@@ -4,11 +4,11 @@
     .dependencies = .{
         .serial = .{
             .url = "https://github.com/ZigEmbeddedGroup/serial/archive/refs/heads/master.tar.gz",
-            .hash = "12205a4c45778a0e3c33e49488d2b9565802639ca682ce85b5559fbdc336de7090fe",
+            .hash = "1220ec55e33f683d37c123e8b2a1c8915ed3db3f76c8339922b8d28c00dd8bd316c2",
         },
         .args = .{
             .url = "https://github.com/MasterQ32/zig-args/archive/refs/heads/master.tar.gz",
-            .hash = "12203d04cafc97f952d74cdb077e74c0ab3414f9f6b5fbd159112c62bfa584a0dbed",
+            .hash = "12207752d975a7f5d7cc65662ed1c6b117da8dec6d1bd7af9a39e1b65d90bf86e833",
         },
     },
 }

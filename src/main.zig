@@ -94,11 +94,8 @@ pub fn main() !u8 {
     return 0;
 }
 
-fn subMenu(port: std.fs.File, stdin: std.fs.File, stdout: std.fs.File) !void {
+fn subMenu(port: std.fs.File, stdin: std.fs.File, stdout: std.fs.File, local_echo: bool) !void {
     const stderr = std.io.getStdErr();
-
-    _ = port;
-    _ = stdout;
 
     const cmd_timeout_ns = 500 * std.time.ns_per_ms;
     const timeout = std.time.nanoTimestamp() + cmd_timeout_ns;
@@ -114,6 +111,12 @@ fn subMenu(port: std.fs.File, stdin: std.fs.File, stdout: std.fs.File) !void {
         }
 
         switch (buffer[0]) {
+            0x01 => {
+                if (local_echo) {
+                    try stdout.writeAll("\x01");
+                }
+                try port.writeAll("\x01");
+            },
             0x11, 0x18, 'q', 'Q', 'x', 'X' => return error.CleanExit,
             else => {
                 try stderr.writer().print("?[{X:0>2}]", .{buffer[0]});
@@ -146,7 +149,7 @@ fn inputOutputLoop(port: std.fs.File, stdin: std.fs.File, stdout: std.fs.File, l
             if (len > 0) {
                 if (len == 1 and buffer[0] == 1) {
                     // C-a
-                    subMenu(port, stdin, stdout) catch |err| {
+                    subMenu(port, stdin, stdout, local_echo) catch |err| {
                         if (err == error.CleanExit) {
                             return error.CleanExit;
                         } else {

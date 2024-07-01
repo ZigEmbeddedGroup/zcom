@@ -9,7 +9,7 @@ const CliOptions = struct {
     port: ?[]const u8 = null,
     baud: u32 = 115_200,
     @"stop-bits": serial.StopBits = .one,
-    @"data-bits": u4 = 8,
+    @"data-bits": serial.WordSize = .eight,
     parity: serial.Parity = .none,
     @"control-flow": serial.Handshake = .none,
 
@@ -29,7 +29,7 @@ const CliOptions = struct {
 
 pub fn main() !u8 {
     errdefer |e| if (e == error.SilentExit) {
-        std.os.exit(1);
+        std.posix.exit(1);
     };
 
     const stderr = std.io.getStdErr();
@@ -199,7 +199,7 @@ fn autoDetectSerialPort(allocator: std.mem.Allocator) ![]const u8 {
 
     if (list.items.len == 0) {
         try stderr.writeAll("No serial port could be auto-detected. Use --port <name> to provide the port.\r\n");
-        std.os.exit(1);
+        std.posix.exit(1);
     }
 
     var default_selection: usize = 0;
@@ -277,31 +277,25 @@ const IoOptions = switch (builtin.os.tag) {
         const VTIME = 5;
         const VMIN = 6;
 
-        const os = switch (builtin.os.tag) {
-            .macos => std.os.darwin,
-            .linux => std.os.linux,
-            else => unreachable,
-        };
-
-        termios: os.termios,
+        termios: std.posix.termios,
 
         fn configureTtyNonBlocking(file: std.fs.File) !IoOptions {
-            const original = try std.os.tcgetattr(file.handle);
+            const original = try std.posix.tcgetattr(file.handle);
 
             var settings = original;
 
-            settings.iflag = os.IGNBRK; // Ignore BREAK condition on input.
-            settings.oflag = 0; // no magic enabled
-            settings.cflag |= 0; // unchanged
-            settings.lflag = 0; // no magic enabled
+            settings.iflag = std.posix.tc_iflag_t{.IGNBRK = true}; // Ignore BREAK condition on input.
+            settings.oflag = std.posix.tc_oflag_t{}; // no magic enabled
+            // settings.cflag |= 0; // unchanged
+            settings.lflag = std.posix.tc_lflag_t{}; // no magic enabled
 
             // make read() nonblocking:
             settings.cc[VMIN] = 1;
             settings.cc[VTIME] = 0;
 
-            try std.os.tcsetattr(file.handle, .NOW, settings);
+            try std.posix.tcsetattr(file.handle, .NOW, settings);
 
-            _ = try std.os.fcntl(file.handle, std.os.F.SETFL, try std.os.fcntl(file.handle, std.os.F.GETFL, 0) | std.os.O.NONBLOCK);
+            _ = try std.posix.fcntl(file.handle, std.posix.F.SETFL, try std.posix.fcntl(file.handle, std.posix.F.GETFL, 0) | std.posix.system.IN.NONBLOCK);
 
             return IoOptions{
                 .termios = original,
@@ -309,11 +303,11 @@ const IoOptions = switch (builtin.os.tag) {
         }
 
         fn configureSerialNonBlocking(file: std.fs.File) !void {
-            _ = try std.os.fcntl(file.handle, std.os.F.SETFL, try std.os.fcntl(file.handle, std.os.F.GETFL, 0) | std.os.O.NONBLOCK);
+            _ = try std.posix.fcntl(file.handle, std.posix.F.SETFL, try std.posix.fcntl(file.handle, std.posix.F.GETFL, 0) | std.posix.system.IN.NONBLOCK);
         }
 
         fn restore(options: IoOptions, file: std.fs.File) !void {
-            try std.os.tcsetattr(file.handle, .NOW, options.termios);
+            try std.posix.tcsetattr(file.handle, .NOW, options.termios);
         }
     },
 };

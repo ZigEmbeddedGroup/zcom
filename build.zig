@@ -12,13 +12,13 @@ pub fn build(b: *std.Build) void {
 
     const exe = b.addExecutable(.{
         .name = "zcom",
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
 
-    exe.addModule("args", args_mod);
-    exe.addModule("serial", serial_mod);
+    exe.root_module.addImport("args", args_mod);
+    exe.root_module.addImport("serial", serial_mod);
 
     b.installArtifact(exe);
 
